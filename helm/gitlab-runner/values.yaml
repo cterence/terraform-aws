@@ -1,0 +1,65 @@
+gitlab-runner:
+  gitlabUrl: https://gitlab.com
+  runnerRegistrationToken: GR1348941vBgzscysyvqnVDNJmcpN # To update if you change the Gitlab group
+
+  terminationGracePeriodSeconds: 3600
+  concurrent: 200
+  checkInterval: 5
+
+  rbac:
+    create: true
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - pods
+          - pods/exec
+          - pods/logs
+          - pods/attach
+          - secrets
+          - configmaps
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - patch
+          - delete
+          - update
+      # To create runners able to deploy anything into the cluster, not very useful with GitOps
+      # - apiGroups: ["*"]
+      #   resources: ["*"]
+      #   verbs: ["*"]
+    clusterWideAccess: false
+  runners:
+    config: |
+      listen_address = ":9252"
+      [[runners]]
+        [runners.kubernetes]
+          image = "ubuntu:20.04"
+          namespace = "gitlab"
+          poll_timeout = 600
+          cpu_request = "1000m"
+          cpu_limit = "1000m"
+          memory_request = "2Gi"
+          memory_limit = "2Gi"
+          helper_memory_request = "256Mi"
+          helper_memory_limit = "256Mi"
+          service_memory_request = "512Mi"
+          service_memory_limit = "512Mi"
+          [runners.kubernetes.pod_labels]
+            ci_executor = "$CI_RUNNER_DESCRIPTION"
+            ci_job = "$CI_BUILD_ID"
+        [runners.feature_flags]
+          FF_SCRIPT_SECTIONS = true
+          FF_GITLAB_REGISTRY_HELPER_IMAGE = true
+    executor: kubernetes
+    tags: "kubernetes,rezel" # Update
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

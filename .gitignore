@@ -1,0 +1,5 @@
+.terraform*
+tfstate/
+terraform.tfstate*
+charts/
+requirements.lock
