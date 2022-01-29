@@ -71,7 +71,7 @@ apply:
     - .init
   when: manual
   script:
-    - terraform apply -auto-approve plan
+    - terraform apply -input=false -auto-approve plan
   tags:
     - homelab
 
