@@ -1,9 +1,11 @@
 stages:
-  - format
-  - lint
+  - test
+  - init
+  - plan
+  - apply
 
 format:
-  stage: format
+  stage: test
   image: hashicorp/terraform:1.1.4
   script:
     - terraform fmt -check
@@ -11,9 +13,39 @@ format:
     - homelab
 
 lint:
-  stage: lint
+  stage: test
   image: ghcr.io/terraform-linters/tflint:latest
   script:
     - tflint --enable-plugin=aws
+  tags:
+    - homelab
+
+init:
+  stage: init
+  image: hashicorp/terraform:1.1.4
+  script:
+    - terraform init
+  cache:
+    key: terraform
+    paths:
+      - .terraform
+  tags:
+    - homelab
+
+validate:
+  stage: init
+  image: hashicorp/terraform:1.1.4
+  script:
+    - terraform validate
+  tags:
+    - homelab
+
+plan:
+  stage: plan
+  script:
+    - terraform plan --out plan
+  artifacts:
+    paths:
+      - plan
   tags:
     - homelab
