@@ -9,6 +9,17 @@ data "aws_iam_policy_document" "ec2_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "eks_cluster" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["eks.amazonaws.com"]
+    }
+  }
+}
+
 resource "aws_iam_role" "bastion" {
   name               = "bastion"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
@@ -22,18 +33,6 @@ resource "aws_iam_role_policy_attachment" "bastion_ssm" {
 resource "aws_iam_instance_profile" "bastion" {
   name = "bastion"
   role = aws_iam_role.bastion.name
-}
-
-
-data "aws_iam_policy_document" "eks_cluster" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["eks.amazonaws.com"]
-    }
-  }
 }
 
 resource "aws_iam_role" "eks_cluster" {

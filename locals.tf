@@ -46,6 +46,21 @@ locals {
     subnet_name => subnet_attributes if length(regexall("data_[12]", subnet_name)) > 0
   }
 
+  app_subnet_ids = [
+    for subnet_name in keys(local.app_subnets) :
+    aws_subnet.this[subnet_name].id
+  ]
+
+  public_subnet_ids = [
+    for subnet_name in keys(local.public_subnets) :
+    aws_subnet.this[subnet_name].id
+  ]
+
+  data_subnet_ids = [
+    for subnet_name in keys(local.data_subnets) :
+    aws_subnet.this[subnet_name].id
+  ]
+
   bastion_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHf7O+dU4jfkgWfqGKFDG3kZ1OA98C/aEuR9Z6CJi+0 terence@pop-os"
 
   ssm_vpc_endpoint_services = [

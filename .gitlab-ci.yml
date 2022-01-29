@@ -9,7 +9,6 @@ image: hashicorp/terraform:1.1.4
 
 .init:
   before_script:
-    - cd ${TF_ROOT}
     - |
       mkdir /root/.terraform.d && cat <<-EOF > /root/.terraform.d/credentials.tfrc.json
       {
@@ -33,37 +32,27 @@ image: hashicorp/terraform:1.1.4
       EOF
     - terraform init
 
-variables:
-  TF_ROOT: ${CI_PROJECT_DIR} # The relative path to the root directory of the Terraform project
+format:
+  stage: test
+  script:
+    - terraform fmt -check
+  tags:
+    - homelab
 
-# format:
-#   stage: test
-#   script:
-#     - cd ${TF_ROOT}
-#     - terraform fmt -check
-#   tags:
-#     - homelab
-
-# lint:
-#   stage: test
-#   image: ghcr.io/terraform-linters/tflint:latest
-#   script:
-#     - cd ${TF_ROOT}
-#     - tflint --enable-plugin=aws
-#   tags:
-#     - homelab
+lint:
+  stage: test
+  image: ghcr.io/terraform-linters/tflint:latest
+  script:
+    - tflint --enable-plugin=aws
+  tags:
+    - homelab
 
 validate:
   stage: validate
   extends:
     - .init
   script:
-    - cd ${TF_ROOT}
-    - ls .terraform
     - terraform validate
-  artifacts:
-    paths:
-      - ${TF_ROOT}/.terraform
   tags:
     - homelab
 
@@ -72,12 +61,7 @@ plan:
   extends:
     - .init
   script:
-    - cd ${TF_ROOT}
     - terraform plan -out=plan
-  artifacts:
-    paths:
-      - ${TF_ROOT}/.terraform
-      - ${TF_ROOT}/plan
   tags:
     - homelab
 
@@ -87,7 +71,6 @@ apply:
     - .init
   when: manual
   script:
-    - cd ${TF_ROOT}
     - terraform apply -auto-approve plan
   tags:
     - homelab
@@ -98,7 +81,6 @@ destroy:
     - .init
   when: manual
   script:
-    - cd ${TF_ROOT}
     - terraform destroy -auto-approve
   tags:
     - homelab

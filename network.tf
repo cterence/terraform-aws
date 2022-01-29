@@ -87,17 +87,12 @@ resource "aws_route_table_association" "pub" {
 resource "aws_vpc_endpoint" "this" {
   for_each = toset(local.ssm_vpc_endpoint_services)
 
-  service_name = each.key
-  vpc_id       = aws_vpc.this.id
-  subnet_ids = [
-    for subnet_name, subnet_attributes in local.app_subnets :
-    aws_subnet.this[subnet_name].id
-  ]
+  service_name        = each.key
+  vpc_endpoint_type   = "Interface"
+  vpc_id              = aws_vpc.this.id
+  subnet_ids          = local.app_subnet_ids
   private_dns_enabled = true
-  security_group_ids = [
-    aws_security_group.compute.id
-  ]
-  vpc_endpoint_type = "Interface"
+  security_group_ids  = [aws_security_group.compute.id]
 }
 
 resource "aws_security_group" "compute" {

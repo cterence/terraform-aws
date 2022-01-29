@@ -6,10 +6,7 @@ resource "aws_eks_cluster" "this" {
     endpoint_private_access = true
     endpoint_public_access  = false
     security_group_ids      = [aws_security_group.compute.id]
-    subnet_ids = [
-      for subnet_name in keys(local.app_subnets) :
-      aws_subnet.this[subnet_name].id
-    ]
+    subnet_ids              = local.app_subnet_ids
   }
 
   tags = {
@@ -23,6 +20,14 @@ resource "aws_ami_copy" "eks_node_ami" {
   name              = "amazon_linux_2_eks_optimized_1_21"
   source_ami_id     = "ami-008ccec5b800d034b"
   source_ami_region = "eu-west-3"
+
+  lifecycle {
+    ignore_changes = [description]
+  }
+
+  tags = {
+    Name = "amazon_linux_2_eks_optimized_1_21"
+  }
 }
 
 resource "aws_launch_template" "eks_node" {
@@ -43,8 +48,7 @@ resource "aws_launch_template" "eks_node" {
     }
   }
 
-  image_id = aws_ami_copy.eks_node_ami.id
-
+  image_id      = aws_ami_copy.eks_node_ami.id
   instance_type = "t3.micro"
 
   tag_specifications {
@@ -77,18 +81,15 @@ resource "aws_eks_node_group" "blue" {
 
   launch_template {
     name    = aws_launch_template.eks_node.name
-    version = "$Latest"
+    version = aws_launch_template.eks_node.default_version
   }
 
   scaling_config {
-    desired_size = 1
     min_size     = 1
     max_size     = 1
+    desired_size = 1
   }
-  subnet_ids = [
-    for subnet_name in keys(local.app_subnets) :
-    aws_subnet.this[subnet_name].id
-  ]
+  subnet_ids = local.app_subnet_ids
 
   tags = {
     Name = "blue"
