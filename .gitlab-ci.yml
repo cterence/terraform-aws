@@ -1,0 +1,10 @@
+stages:
+  - format
+
+format:
+  stage: format
+  image: hashicorp/terraform:1.1.4
+  script:
+    - terraform fmt -check
+  tags:
+    - homelab
