@@ -1,10 +1,19 @@
 stages:
   - format
+  - lint
 
 format:
   stage: format
   image: hashicorp/terraform:1.1.4
   script:
     - terraform fmt -check
+  tags:
+    - homelab
+
+lint:
+  stage: lint
+  image: ghcr.io/terraform-linters/tflint:latest
+  script:
+    - tflint --enable-plugin=aws
   tags:
     - homelab
