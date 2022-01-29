@@ -1,51 +1,104 @@
 stages:
   - test
-  - init
+  - validate
   - plan
   - apply
+  - destroy
 
-format:
-  stage: test
-  image: hashicorp/terraform:1.1.4
-  script:
-    - terraform fmt -check
-  tags:
-    - homelab
+image: hashicorp/terraform:1.1.4
 
-lint:
-  stage: test
-  image: ghcr.io/terraform-linters/tflint:latest
-  script:
-    - tflint --enable-plugin=aws
-  tags:
-    - homelab
+.init:
+  before_script:
+    - cd ${TF_ROOT}
+    - |
+      mkdir /root/.terraform.d && cat <<-EOF > /root/.terraform.d/credentials.tfrc.json
+      {
+        "credentials": {
+          "app.terraform.io": {
+            "token": "${TF_CLOUD_TOKEN}"
+          }
+        }
+      }
+      EOF
+    - |
+      mkdir /root/.aws && cat <<-EOF > /root/.aws/credentials
+      [default]
+      aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+      aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
 
-init:
-  stage: init
-  image: hashicorp/terraform:1.1.4
-  script:
+      [terraform]
+      role_arn = arn:aws:iam::964066691632:role/administrator
+      source_profile = default
+      role_session_name = gitlab
+      EOF
     - terraform init
-  cache:
-    key: terraform
-    paths:
-      - .terraform
-  tags:
-    - homelab
+
+variables:
+  TF_ROOT: ${CI_PROJECT_DIR} # The relative path to the root directory of the Terraform project
+
+# format:
+#   stage: test
+#   script:
+#     - cd ${TF_ROOT}
+#     - terraform fmt -check
+#   tags:
+#     - homelab
+
+# lint:
+#   stage: test
+#   image: ghcr.io/terraform-linters/tflint:latest
+#   script:
+#     - cd ${TF_ROOT}
+#     - tflint --enable-plugin=aws
+#   tags:
+#     - homelab
 
 validate:
-  stage: init
-  image: hashicorp/terraform:1.1.4
+  stage: validate
+  extends:
+    - .init
   script:
+    - cd ${TF_ROOT}
+    - ls .terraform
     - terraform validate
+  artifacts:
+    paths:
+      - ${TF_ROOT}/.terraform
   tags:
     - homelab
 
 plan:
   stage: plan
+  extends:
+    - .init
   script:
-    - terraform plan --out plan
+    - cd ${TF_ROOT}
+    - terraform plan -out=plan
   artifacts:
     paths:
-      - plan
+      - ${TF_ROOT}/.terraform
+      - ${TF_ROOT}/plan
+  tags:
+    - homelab
+
+apply:
+  stage: apply
+  extends:
+    - .init
+  when: manual
+  script:
+    - cd ${TF_ROOT}
+    - terraform apply -auto-approve plan
+  tags:
+    - homelab
+
+destroy:
+  stage: destroy
+  extends:
+    - .init
+  when: manual
+  script:
+    - cd ${TF_ROOT}
+    - terraform destroy -auto-approve
   tags:
     - homelab
