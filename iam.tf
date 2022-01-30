@@ -25,6 +25,11 @@ resource "aws_iam_role" "bastion" {
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
 }
 
+resource "aws_iam_role" "bastion_test" {
+  name               = "bastion_test"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+}
+
 resource "aws_iam_role_policy_attachment" "bastion_ssm" {
   role       = aws_iam_role.bastion.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
