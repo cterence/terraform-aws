@@ -1,4 +1,11 @@
 locals {
+
+  # Network
+  vpc = {
+    name       = "main"
+    cidr_block = "10.0.0.0/16"
+  }
+
   subnets = {
     app_1 = {
       availability_zone = "eu-west-3a"
@@ -61,11 +68,63 @@ locals {
     aws_subnet.this[subnet_name].id
   ]
 
-  bastion_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHf7O+dU4jfkgWfqGKFDG3kZ1OA98C/aEuR9Z6CJi+0 terence@pop-os"
+  gateways = {
+    igw_name = "igw"
+  }
 
-  ssm_vpc_endpoint_services = [
-    "com.amazonaws.eu-west-3.ssm",
-    "com.amazonaws.eu-west-3.ssmmessages",
-    "com.amazonaws.eu-west-3.ec2messages",
-  ]
+  bastion_vpc_endpoints = {
+    type = "Interface"
+    services = [
+      "com.amazonaws.eu-west-3.ssm",
+      "com.amazonaws.eu-west-3.ssmmessages",
+      "com.amazonaws.eu-west-3.ec2messages",
+    ]
+  }
+
+  security_groups = {
+    compute = {
+      name        = "compute"
+      description = "Allow compute resources traffic"
+    }
+  }
+
+  # Bastion
+  bastion = {
+    name          = "bastion"
+    image_id      = "ami-0c6ebbd55ab05f070"
+    instance_type = "t2.micro"
+    public_key    = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHf7O+dU4jfkgWfqGKFDG3kZ1OA98C/aEuR9Z6CJi+0 terence@pop-os"
+  }
+
+  # EKS
+
+
+  eks = {
+    cluster = {
+      name    = "eks_cluster"
+      version = "1.21"
+    }
+    node = {
+      name           = "eks_node"
+      lt_description = "Launch template for nodes of an EKS cluster"
+      image = {
+        name   = "amazon_linux_2_eks_optimized_1_21"
+        id     = "ami-008ccec5b800d034b"
+        region = "eu-west-3"
+      }
+      capacity_type = "SPOT"
+      ebs = {
+        delete_on_termination = true
+        volume_size           = 8
+        volume_type           = "gp2"
+        encrypted             = false
+      }
+      instance_type = "t3.micro"
+      scaling_config = {
+        min_size     = 1
+        max_size     = 1
+        desired_size = 1
+      }
+    }
+  }
 }

@@ -1,3 +1,7 @@
+################
+### Policies ###
+################
+
 data "aws_iam_policy_document" "ec2_assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -20,46 +24,39 @@ data "aws_iam_policy_document" "eks_cluster" {
   }
 }
 
+#################
+### IAM roles ###
+#################
+
 resource "aws_iam_role" "bastion" {
-  name               = "bastion"
+  name               = local.bastion.name
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
-}
-
-resource "aws_iam_role" "bastion_test" {
-  name               = "bastion_test"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
-}
-
-resource "aws_iam_role_policy_attachment" "bastion_ssm" {
-  role       = aws_iam_role.bastion.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "bastion" {
-  name = "bastion"
-  role = aws_iam_role.bastion.name
 }
 
 resource "aws_iam_role" "eks_cluster" {
-  name               = "eks_cluster"
+  name               = local.eks.cluster.name
   assume_role_policy = data.aws_iam_policy_document.eks_cluster.json
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cluster" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.eks_cluster.name
-}
-
-
-resource "aws_iam_openid_connect_provider" "this" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.this.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
 
 resource "aws_iam_role" "eks_node" {
   name               = "eks_node"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+}
+
+###################################
+### IAM Role policy attachments ###
+###################################
+
+# Bastion
+resource "aws_iam_role_policy_attachment" "bastion_ssm" {
+  role       = aws_iam_role.bastion.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# EKS
+resource "aws_iam_role_policy_attachment" "eks_cluster" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks_cluster.name
 }
 
 resource "aws_iam_role_policy_attachment" "eks_node_worker" {
@@ -80,4 +77,12 @@ resource "aws_iam_role_policy_attachment" "eks_node_cni" {
 resource "aws_iam_role_policy_attachment" "eks_node_ssm" {
   role       = aws_iam_role.eks_node.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+#############################
+### IAM instance profiles ###
+#############################
+resource "aws_iam_instance_profile" "bastion" {
+  name = local.bastion.name
+  role = aws_iam_role.bastion.name
 }
