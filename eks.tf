@@ -20,6 +20,13 @@ resource "aws_eks_cluster" "this" {
   version = local.eks.cluster.version
 }
 
+resource "aws_iam_openid_connect_provider" "this" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.this.certificates[0].sha1_fingerprint]
+  url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+
 ################
 ### Node AMI ###
 ################
@@ -106,8 +113,26 @@ resource "aws_eks_node_group" "blue" {
   }
 }
 
-resource "aws_iam_openid_connect_provider" "this" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.this.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
+resource "aws_eks_node_group" "green" {
+  cluster_name    = aws_eks_cluster.this.name
+  node_role_arn   = aws_iam_role.eks_node.arn
+  node_group_name = "green"
+  capacity_type   = local.eks.node.capacity_type
+
+  launch_template {
+    name    = aws_launch_template.eks_node.name
+    version = aws_launch_template.eks_node.default_version
+  }
+
+  scaling_config {
+    min_size     = local.eks.node.scaling_config.min_size
+    max_size     = local.eks.node.scaling_config.max_size
+    desired_size = local.eks.node.scaling_config.desired_size
+  }
+
+  subnet_ids = local.app_subnet_ids
+
+  tags = {
+    Name = "green"
+  }
 }
