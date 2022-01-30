@@ -1,12 +1,20 @@
+###########
+### VPC ###
+###########
+
 resource "aws_vpc" "this" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = local.vpc.cidr_block
   enable_dns_hostnames = true
   enable_dns_support   = true
 
   tags = {
-    Name = "main"
+    Name = local.vpc.name
   }
 }
+
+###############
+### Subnets ###
+###############
 
 resource "aws_subnet" "this" {
   for_each = local.subnets
@@ -20,11 +28,16 @@ resource "aws_subnet" "this" {
   }
 }
 
+
+################
+### Gateways ###
+################
+
 resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
 
   tags = {
-    Name = "igw"
+    Name = local.gateways.igw_name
   }
 }
 
@@ -47,6 +60,9 @@ resource "aws_nat_gateway" "this" {
   }
 }
 
+#################### 
+### Route tables ###
+#################### 
 
 resource "aws_route_table" "app" {
   for_each = local.app_subnets
@@ -57,13 +73,6 @@ resource "aws_route_table" "app" {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.this["pub_${index(keys(local.app_subnets), each.key) + 1}"].id
   }
-}
-
-resource "aws_route_table_association" "app" {
-  for_each = local.app_subnets
-
-  route_table_id = aws_route_table.app[each.key].id
-  subnet_id      = aws_subnet.this[each.key].id
 }
 
 resource "aws_route_table" "pub" {
@@ -77,6 +86,13 @@ resource "aws_route_table" "pub" {
   }
 }
 
+resource "aws_route_table_association" "app" {
+  for_each = local.app_subnets
+
+  route_table_id = aws_route_table.app[each.key].id
+  subnet_id      = aws_subnet.this[each.key].id
+}
+
 resource "aws_route_table_association" "pub" {
   for_each = local.public_subnets
 
@@ -84,20 +100,27 @@ resource "aws_route_table_association" "pub" {
   subnet_id      = aws_subnet.this[each.key].id
 }
 
+#####################
+### VPC endpoints ###
+#####################
+
 resource "aws_vpc_endpoint" "this" {
-  for_each = toset(local.ssm_vpc_endpoint_services)
+  for_each = toset(local.bastion_vpc_endpoints.services)
 
   service_name        = each.key
-  vpc_endpoint_type   = "Interface"
+  vpc_endpoint_type   = local.bastion_vpc_endpoints.type
   vpc_id              = aws_vpc.this.id
   subnet_ids          = local.app_subnet_ids
   private_dns_enabled = true
   security_group_ids  = [aws_security_group.compute.id]
 }
 
+#######################
+### Security groups ###
+#######################
 resource "aws_security_group" "compute" {
-  name        = "compute"
-  description = "Allow compute resources traffic"
+  name        = local.security_groups.compute.name
+  description = local.security_groups.compute.description
   vpc_id      = aws_vpc.this.id
 
   ingress {

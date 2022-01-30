@@ -1,0 +1,5 @@
+version: 3
+automerge: true
+projects:
+  - dir: .
+    workspace: aws-sandbox

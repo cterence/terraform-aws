@@ -46,41 +46,40 @@ lint:
     - tflint --enable-plugin=aws
   tags:
     - homelab
+# validate:
+#   stage: validate
+#   extends:
+#     - .init
+#   script:
+#     - terraform validate
+#   tags:
+#     - homelab
 
-validate:
-  stage: validate
-  extends:
-    - .init
-  script:
-    - terraform validate
-  tags:
-    - homelab
+# plan:
+#   stage: plan
+#   extends:
+#     - .init
+#   script:
+#     - terraform plan -out=plan
+#   tags:
+#     - homelab
 
-plan:
-  stage: plan
-  extends:
-    - .init
-  script:
-    - terraform plan -out=plan
-  tags:
-    - homelab
+# apply:
+#   stage: apply
+#   extends:
+#     - .init
+#   when: manual
+#   script:
+#     - terraform apply -input=false -auto-approve plan
+#   tags:
+#     - homelab
 
-apply:
-  stage: apply
-  extends:
-    - .init
-  when: manual
-  script:
-    - terraform apply -input=false -auto-approve plan
-  tags:
-    - homelab
-
-destroy:
-  stage: destroy
-  extends:
-    - .init
-  when: manual
-  script:
-    - terraform destroy -auto-approve
-  tags:
-    - homelab
+# destroy:
+#   stage: destroy
+#   extends:
+#     - .init
+#   when: manual
+#   script:
+#     - terraform destroy -auto-approve
+#   tags:
+#     - homelab

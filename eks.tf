@@ -1,5 +1,9 @@
+###################
+### EKS cluster ###
+###################
+
 resource "aws_eks_cluster" "this" {
-  name     = "cluster"
+  name     = local.eks.cluster.name
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
@@ -10,52 +14,57 @@ resource "aws_eks_cluster" "this" {
   }
 
   tags = {
-    Name = "cluster"
+    Name = local.eks.cluster.name
   }
 
-  version = "1.21"
+  version = local.eks.cluster.version
 }
 
-resource "aws_ami_copy" "eks_node_ami" {
-  name              = "amazon_linux_2_eks_optimized_1_21"
-  source_ami_id     = "ami-008ccec5b800d034b"
-  source_ami_region = "eu-west-3"
+################
+### Node AMI ###
+################
 
+resource "aws_ami_copy" "eks_node_image" {
+  name              = local.eks.node.image.name
+  source_ami_id     = local.eks.node.image.id
+  source_ami_region = local.eks.node.image.region
+
+  # The description updates itself after apply, ignore the changes
   lifecycle {
     ignore_changes = [description]
   }
 
   tags = {
-    Name = "amazon_linux_2_eks_optimized_1_21"
+    Name = local.eks.node.image.name
   }
 }
 
 resource "aws_launch_template" "eks_node" {
-  name        = "eks_node"
-  description = "Launch template for nodes of an EKS cluster"
+  name        = local.eks.node.name
+  description = local.eks.node.lt_description
 
   update_default_version = true
 
   block_device_mappings {
-    device_name = aws_ami_copy.eks_node_ami.root_device_name
+    device_name = aws_ami_copy.eks_node_image.root_device_name
 
     ebs {
-      delete_on_termination = true
-      volume_size           = 8
-      volume_type           = "gp2"
-      encrypted             = false
+      delete_on_termination = local.eks.node.ebs.delete_on_termination
+      volume_size           = local.eks.node.ebs.volume_size
+      volume_type           = local.eks.node.ebs.volume_type
+      encrypted             = local.eks.node.ebs.encrypted
       # kms_key_id            = data.aws_kms_key.this.arn
     }
   }
 
-  image_id      = aws_ami_copy.eks_node_ami.id
-  instance_type = "t3.micro"
+  image_id      = aws_ami_copy.eks_node_image.id
+  instance_type = local.eks.node.instance_type
 
   tag_specifications {
     resource_type = "instance"
 
     tags = {
-      Name = "eks_node"
+      Name = local.eks.node.name
     }
   }
 
@@ -77,7 +86,7 @@ resource "aws_eks_node_group" "blue" {
   cluster_name    = aws_eks_cluster.this.name
   node_role_arn   = aws_iam_role.eks_node.arn
   node_group_name = "blue"
-  capacity_type   = "SPOT"
+  capacity_type   = local.eks.node.capacity_type
 
   launch_template {
     name    = aws_launch_template.eks_node.name
@@ -85,13 +94,20 @@ resource "aws_eks_node_group" "blue" {
   }
 
   scaling_config {
-    min_size     = 1
-    max_size     = 1
-    desired_size = 1
+    min_size     = local.eks.node.scaling_config.min_size
+    max_size     = local.eks.node.scaling_config.max_size
+    desired_size = local.eks.node.scaling_config.desired_size
   }
+
   subnet_ids = local.app_subnet_ids
 
   tags = {
     Name = "blue"
   }
+}
+
+resource "aws_iam_openid_connect_provider" "this" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.this.certificates[0].sha1_fingerprint]
+  url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
