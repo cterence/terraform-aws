@@ -119,10 +119,10 @@ locals {
         volume_type           = "gp2"
         encrypted             = false
       }
-      instance_type = "t3.micro"
+      instance_type = "t3.small"
       scaling_config = {
         min_size     = 1
-        max_size     = 1
+        max_size     = 3
         desired_size = 1
       }
     }
