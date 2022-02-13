@@ -5,32 +5,32 @@ stages:
   - apply
   - destroy
 
-image: hashicorp/terraform:1.1.4
+image: hashicorp/terraform:1.1.5
 
-.init:
-  before_script:
-    - |
-      mkdir /root/.terraform.d && cat <<-EOF > /root/.terraform.d/credentials.tfrc.json
-      {
-        "credentials": {
-          "app.terraform.io": {
-            "token": "${TF_CLOUD_TOKEN}"
-          }
-        }
-      }
-      EOF
-    - |
-      mkdir /root/.aws && cat <<-EOF > /root/.aws/credentials
-      [default]
-      aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-      aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+# .init:
+#   before_script:
+#     - |
+#       mkdir /root/.terraform.d && cat <<-EOF > /root/.terraform.d/credentials.tfrc.json
+#       {
+#         "credentials": {
+#           "app.terraform.io": {
+#             "token": "${TF_CLOUD_TOKEN}"
+#           }
+#         }
+#       }
+#       EOF
+#     - |
+#       mkdir /root/.aws && cat <<-EOF > /root/.aws/credentials
+#       [default]
+#       aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+#       aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
 
-      [terraform]
-      role_arn = arn:aws:iam::964066691632:role/administrator
-      source_profile = default
-      role_session_name = gitlab
-      EOF
-    - terraform init
+#       [terraform]
+#       role_arn = arn:aws:iam::964066691632:role/administrator
+#       source_profile = default
+#       role_session_name = gitlab
+#       EOF
+#     - terraform init
 
 format:
   stage: test
