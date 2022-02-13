@@ -26,26 +26,6 @@ resource "aws_iam_openid_connect_provider" "this" {
   url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
 
-
-################
-### Node AMI ###
-################
-
-resource "aws_ami_copy" "eks_node_image" {
-  name              = local.eks.node.image.name
-  source_ami_id     = local.eks.node.image.id
-  source_ami_region = local.eks.node.image.region
-
-  # The description updates itself after apply, ignore the changes
-  lifecycle {
-    ignore_changes = [description]
-  }
-
-  tags = {
-    Name = local.eks.node.image.name
-  }
-}
-
 resource "aws_launch_template" "eks_node" {
   name        = local.eks.node.name
   description = local.eks.node.lt_description
@@ -53,7 +33,7 @@ resource "aws_launch_template" "eks_node" {
   update_default_version = true
 
   block_device_mappings {
-    device_name = aws_ami_copy.eks_node_image.root_device_name
+    device_name = local.eks.node.image.device_name
 
     ebs {
       delete_on_termination = local.eks.node.ebs.delete_on_termination
@@ -64,7 +44,7 @@ resource "aws_launch_template" "eks_node" {
     }
   }
 
-  image_id      = aws_ami_copy.eks_node_image.id
+  image_id      = local.eks.node.image.id
   instance_type = local.eks.node.instance_type
 
   tag_specifications {
