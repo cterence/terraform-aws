@@ -1,3 +1,3 @@
-# Dojo CI / CD Rezel
+# Terraform AWS
 
-Code to deploy infrastructure for the Rezel CI / CD dojo on AWS.
+Some AWS Terraform / Terragrunt code
