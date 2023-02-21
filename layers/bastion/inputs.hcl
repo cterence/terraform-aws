@@ -8,6 +8,7 @@ dependency "eks" {
 
 inputs = {
   enabled         = true
+  instance_type   = "t3a.micro"
   name            = "bastion"
   vpc_id          = dependency.network.outputs.vpc_id
   subnets         = dependency.network.outputs.private_subnets
